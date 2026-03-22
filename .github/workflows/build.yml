@@ -18,7 +18,7 @@ jobs:
         with:
           path: openwrt/dl
           key: openwrt-dl-cache
-          
+
       - name: Cache toolchain
         uses: actions/cache@v3
         with:
@@ -42,20 +42,26 @@ jobs:
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
-      - name: Configure for NX30 Pro (FIXED)
+      - name: Configure for NX30 Pro
         run: |
           cd openwrt
 
-          make defconfig
+          # 删除旧配置
+          rm -f .config
 
-          ./scripts/config --set-val CONFIG_TARGET mediatek
-          ./scripts/config --set-val CONFIG_TARGET_SUBTARGET filogic
-          ./scripts/config --set-val CONFIG_TARGET_PROFILE "h3c_magic_nx30_pro"
+          # 直接写入 .config，确保设备正确
+          cat > .config <<EOF
+CONFIG_TARGET_mediatek=y
+CONFIG_TARGET_mediatek_filogic=y
+CONFIG_TARGET_mediatek_filogic_DEVICE_h3c_magic_nx30_pro=y
 
-          ./scripts/config --enable CONFIG_PACKAGE_luci
-          ./scripts/config --enable CONFIG_PACKAGE_luci-ssl
-          ./scripts/config --enable CONFIG_PACKAGE_AdGuardHome
+CONFIG_PACKAGE_luci=y
+CONFIG_PACKAGE_luci-ssl=y
+CONFIG_PACKAGE_AdGuardHome=y
+CONFIG_DEVEL=y
+EOF
 
+          # 生成最终配置
           make defconfig
 
       - name: Build firmware
