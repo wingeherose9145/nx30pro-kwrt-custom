@@ -1,4 +1,4 @@
-name: Build NX30 Pro Custom Firmware
+name: NX30Pro Builder
 
 on:
   workflow_dispatch:
@@ -11,50 +11,40 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Install deps
         run: |
-          sudo apt update
-          sudo apt install -y build-essential clang flex bison g++ gawk \
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang flex bison g++ gawk \
           gcc-multilib g++-multilib gettext git libncurses-dev libssl-dev \
           python3-distutils rsync unzip zlib1g-dev file wget curl
 
-      - name: Clone ImmortalWrt
+      - name: Clone source
         run: |
           git clone https://github.com/immortalwrt/immortalwrt.git openwrt
 
-      - name: Update & Install Feeds
+      - name: Feeds
         run: |
           cd openwrt
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
-      - name: Configure for NX30 Pro
+      - name: Config
         run: |
           cd openwrt
-
-          cat <<EOF > .config
-CONFIG_TARGET_mediatek=y
-CONFIG_TARGET_mediatek_filogic=y
-CONFIG_TARGET_mediatek_filogic_DEVICE_h3c_magic_nx30_pro=y
-
-CONFIG_PACKAGE_luci=y
-CONFIG_PACKAGE_luci-ssl=y
-
-CONFIG_PACKAGE_AdGuardHome=y
-CONFIG_PACKAGE_curl=y
-CONFIG_PACKAGE_wget=y
-CONFIG_PACKAGE_coreutils-nohup=y
-EOF
-
+          echo "CONFIG_TARGET_mediatek=y" > .config
+          echo "CONFIG_TARGET_mediatek_filogic=y" >> .config
+          echo "CONFIG_TARGET_mediatek_filogic_DEVICE_h3c_magic_nx30_pro=y" >> .config
+          echo "CONFIG_PACKAGE_luci=y" >> .config
+          echo "CONFIG_PACKAGE_luci-ssl=y" >> .config
           make defconfig
 
-      - name: Build firmware
+      - name: Build
         run: |
           cd openwrt
-          make -j$(nproc) V=s
+          make -j$(nproc)
 
-      - name: Upload firmware
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: NX30Pro-firmware
+          name: firmware
           path: openwrt/bin/targets/
