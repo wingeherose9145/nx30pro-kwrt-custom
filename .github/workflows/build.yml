@@ -13,13 +13,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup caching
+      - name: Cache downloads
         uses: actions/cache@v3
         with:
-          path: |
-            openwrt/downloads
-            openwrt/staging_dir
-          key: ${{ runner.os }}-openwrt-${{ github.sha }}
+          path: openwrt/dl
+          key: openwrt-dl-cache
+          
+      - name: Cache toolchain
+        uses: actions/cache@v3
+        with:
+          path: openwrt/staging_dir
+          key: openwrt-staging-cache
 
       - name: Install dependencies
         run: |
@@ -30,7 +34,7 @@ jobs:
 
       - name: Clone ImmortalWrt
         run: |
-          git clone https://github.com/immortalwrt/immortalwrt.git openwrt
+          git clone --depth 1 https://github.com/immortalwrt/immortalwrt.git openwrt
 
       - name: Update & install feeds
         run: |
@@ -38,35 +42,29 @@ jobs:
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
-      - name: Configure for NX30 Pro
+      - name: Configure for NX30 Pro (FIXED)
         run: |
           cd openwrt
-          echo "CONFIG_TARGET_mediatek=y" > .config
-          echo "CONFIG_TARGET_mediatek_filogic=y" >> .config
-          echo "CONFIG_TARGET_mediatek_filogic_DEVICE_h3c_magic_nx30_pro=y" >> .config
-          echo "CONFIG_PACKAGE_luci=y" >> .config
-          echo "CONFIG_PACKAGE_luci-ssl=y" >> .config
-          echo "CONFIG_PACKAGE_AdGuardHome=y" >> .config
-          echo "CONFIG_PACKAGE_curl=y" >> .config
-          echo "CONFIG_PACKAGE_wget=y" >> .config
-          echo "CONFIG_PACKAGE_coreutils-nohup=y" >> .config
-          echo "CONFIG_DEVEL=y" >> .config
+
+          make defconfig
+
+          ./scripts/config --set-val CONFIG_TARGET mediatek
+          ./scripts/config --set-val CONFIG_TARGET_SUBTARGET filogic
+          ./scripts/config --set-val CONFIG_TARGET_PROFILE "h3c_magic_nx30_pro"
+
+          ./scripts/config --enable CONFIG_PACKAGE_luci
+          ./scripts/config --enable CONFIG_PACKAGE_luci-ssl
+          ./scripts/config --enable CONFIG_PACKAGE_AdGuardHome
+
           make defconfig
 
       - name: Build firmware
         run: |
           cd openwrt
-          make -j$(nproc) V=s
+          make -j$(nproc)
 
       - name: Upload firmware
         uses: actions/upload-artifact@v4
         with:
           name: NX30Pro-firmware
           path: openwrt/bin/targets/mediatek/filogic/
-
-      - name: Publish Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: openwrt/bin/targets/mediatek/filogic/*
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
