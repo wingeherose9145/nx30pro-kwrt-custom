@@ -1,7 +1,9 @@
 name: NX30Pro Custom Firmware Build
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
   build:
@@ -39,18 +41,16 @@ jobs:
       - name: Configure for NX30 Pro
         run: |
           cd openwrt
-          cat <<EOF > .config
-CONFIG_TARGET_mediatek=y
-CONFIG_TARGET_mediatek_filogic=y
-CONFIG_TARGET_mediatek_filogic_DEVICE_h3c_magic_nx30_pro=y
-CONFIG_PACKAGE_luci=y
-CONFIG_PACKAGE_luci-ssl=y
-CONFIG_PACKAGE_AdGuardHome=y
-CONFIG_PACKAGE_curl=y
-CONFIG_PACKAGE_wget=y
-CONFIG_PACKAGE_coreutils-nohup=y
-CONFIG_DEVEL=y
-EOF
+          echo "CONFIG_TARGET_mediatek=y" > .config
+          echo "CONFIG_TARGET_mediatek_filogic=y" >> .config
+          echo "CONFIG_TARGET_mediatek_filogic_DEVICE_h3c_magic_nx30_pro=y" >> .config
+          echo "CONFIG_PACKAGE_luci=y" >> .config
+          echo "CONFIG_PACKAGE_luci-ssl=y" >> .config
+          echo "CONFIG_PACKAGE_AdGuardHome=y" >> .config
+          echo "CONFIG_PACKAGE_curl=y" >> .config
+          echo "CONFIG_PACKAGE_wget=y" >> .config
+          echo "CONFIG_PACKAGE_coreutils-nohup=y" >> .config
+          echo "CONFIG_DEVEL=y" >> .config
           make defconfig
 
       - name: Build firmware
